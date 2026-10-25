@@ -1,0 +1,19 @@
+# Alternative zu Vercel Cron (z. B. auf Vercel Hobby, das Cron-Zeitpunkte nur stundengenau garantiert).
+# Läuft 04:30 und 05:30 UTC; die App startet nur den Lauf, der in Berlin 06:30 entspricht (Sommerzeit-sicher).
+# GitHub startet geplante Workflows unter Last teils mit Verzögerung von einigen Minuten.
+name: Tägliche Aktualisierung
+on:
+  schedule:
+    - cron: "30 4 * * *"
+    - cron: "30 5 * * *"
+  workflow_dispatch: {}
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Pipeline auslösen
+        run: |
+          curl --fail-with-body -sS --max-time 600 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/daily${{ github.event_name == 'workflow_dispatch' && '?force=1' || '' }}"

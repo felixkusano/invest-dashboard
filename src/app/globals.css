@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/*
+  Gestaltung: ruhiges Research-Terminal. Kühles Papierweiß statt Grau, Tinte (Navy) für Text,
+  helles Blau als einziger Akzent, Grün/Rot ausschließlich für Kursrichtung.
+  Hierarchie über Schriftgröße und Gewicht, nicht über Kartenrahmen und Schatten.
+*/
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #0e2240;
+  --color-ink-2: #3a4e6b;
+  --color-muted: #6b7f99;
+  --color-paper: #f5f8fc;
+  --color-surface: #ffffff;
+  --color-line: #d9e4f0;
+  --color-sky: #5bb4e5;
+  --color-sky-soft: #e6f3fb;
+  --color-sky-deep: #1f7fb8;
+  --color-pos: #18804f;
+  --color-pos-soft: #e5f4ec;
+  --color-neg: #c0392b;
+  --color-neg-soft: #fbeae8;
+  --color-warn: #9a6700;
+  --color-warn-soft: #fdf3dc;
+}
+
+@layer base {
+  html { font-family: var(--font-sans); color: var(--color-ink); background: var(--color-paper); }
+  body { font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  h1 { font-size: 1.625rem; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; }
+  h2 { font-size: 1.0625rem; line-height: 1.3; font-weight: 600; }
+  h3 { font-size: 0.9375rem; font-weight: 600; }
+  a { color: var(--color-sky-deep); }
+  a:hover { text-decoration: underline; }
+  :focus-visible { outline: 2px solid var(--color-sky-deep); outline-offset: 2px; border-radius: 3px; }
+  input, select, textarea { border: 1px solid var(--color-line); border-radius: 4px; padding: 0.35rem 0.5rem; background: white; font: inherit; color: inherit; }
+  input:focus, select:focus, textarea:focus { border-color: var(--color-sky); outline: none; box-shadow: 0 0 0 3px var(--color-sky-soft); }
+  table { border-collapse: collapse; width: 100%; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+}
+
+@layer components {
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .panel { background: var(--color-surface); border: 1px solid var(--color-line); border-radius: 6px; }
+  .btn { display: inline-flex; align-items: center; gap: 0.4rem; border-radius: 4px; padding: 0.4rem 0.8rem; font-weight: 500; border: 1px solid var(--color-ink); background: var(--color-ink); color: white; cursor: pointer; }
+  .btn:hover { background: var(--color-ink-2); text-decoration: none; }
+  .btn:disabled { opacity: 0.55; cursor: progress; }
+  .btn-quiet { background: white; color: var(--color-ink); border-color: var(--color-line); }
+  .btn-quiet:hover { background: var(--color-sky-soft); }
+  .label { font-size: 12px; color: var(--color-muted); }
+  .data-table th { text-align: left; font-weight: 500; font-size: 12px; color: var(--color-muted); padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--color-line); white-space: nowrap; }
+  .data-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--color-line); vertical-align: top; }
+  .data-table tr:last-child td { border-bottom: 0; }
+  .data-table tbody tr:hover { background: var(--color-paper); }
+  .text-pos { color: var(--color-pos); }
+  .text-neg { color: var(--color-neg); }
+  .text-muted { color: var(--color-muted); }
+}
