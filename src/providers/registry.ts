@@ -32,7 +32,9 @@ export function buildProviders(opts: { demo: boolean; env?: NodeJS.ProcessEnv; f
   const macro: Record<string, MacroProvider> = { ecb: new EcbProvider(f) };
   if (env.FRED_API_KEY) macro.fred = new FredProvider(env.FRED_API_KEY, f);
   return {
-    quotes: [eod, fh].filter(Boolean) as QuoteProvider[],
+    // Kostenloser Betrieb (EODHD_PLAN=free, Standard): US-Titel über Finnhub, nur Europa/ETFs über EODHD,
+    // damit das Sandbox-Limit von 20 Calls/Tag reicht. Mit bezahltem EODHD-Plan liefert EODHD alles inkl. Historie.
+    quotes: (env.EODHD_PLAN === "paid" ? [eod, fh] : [fh, eod]).filter(Boolean) as QuoteProvider[],
     indices: eod ? [eod] : [],
     news: [fh, eod && env.EODHD_NEWS === "true" ? eod : null, new OfficialRssProvider(f)].filter(Boolean) as NewsProvider[],
     fundamentals: [fh, eod && env.EODHD_FUNDAMENTALS === "true" ? eod : null].filter(Boolean) as FundamentalsProvider[],
@@ -45,7 +47,7 @@ export function buildProviders(opts: { demo: boolean; env?: NodeJS.ProcessEnv; f
 
 export function providerCatalog(env: NodeJS.ProcessEnv = process.env): ProviderInfo[] {
   return [
-    { name: "eodhd", label: "EODHD", role: "Kurse (primär), optional Fundamentaldaten und News", configured: !!env.EODHD_API_KEY, envVar: "EODHD_API_KEY", dataType: "Tagesschluss (EOD)", coverage: "US, XETRA, Oslo, Euronext, UCITS-ETFs, Indizes", limits: "Sandbox 20 Calls/Tag; All-World 100.000/Tag", docsUrl: "https://eodhd.com/financial-apis/" },
+    { name: "eodhd", label: "EODHD", role: "Kurse (primär), optional Fundamentaldaten und News", configured: !!env.EODHD_API_KEY, envVar: "EODHD_API_KEY", dataType: "Tagesschluss (EOD)", coverage: "US, XETRA, Oslo, Euronext, UCITS-ETFs, Indizes", limits: "Free: 20 Calls/Tag, 1 Jahr Historie (reicht für Europa-Titel, ETFs, DAX, Euro Stoxx); All-World 100.000/Tag", docsUrl: "https://eodhd.com/financial-apis/" },
     { name: "finnhub", label: "Finnhub", role: "US-Kurse (Fallback), Unternehmensnews, Kennzahlen, Earnings-Kalender", configured: !!env.FINNHUB_API_KEY, envVar: "FINNHUB_API_KEY", dataType: "Echtzeit (US, Free Tier)", coverage: "Free Tier: US-Titel; Europa nur kostenpflichtig", limits: "60 Calls/Minute", docsUrl: "https://finnhub.io/docs/api" },
     { name: "fred", label: "FRED (St. Louis Fed)", role: "US-Makrodaten, Renditen, Spreads, Rohstoffe, S&P 500, Nasdaq-100, VIX", configured: !!env.FRED_API_KEY, envVar: "FRED_API_KEY", dataType: "Offizielle Statistik, täglich/monatlich", coverage: "USA, globale Rohstoffpreise", limits: "120 Requests/Minute", docsUrl: "https://fred.stlouisfed.org/docs/api/fred/" },
     { name: "ecb", label: "EZB Data Portal", role: "Euroraum-Inflation, Leitzins, Renditen, Referenzwechselkurse", configured: true, envVar: null, dataType: "Offizielle Statistik", coverage: "Euroraum", limits: "ohne Key", docsUrl: "https://data.ecb.europa.eu/help/api/overview" },

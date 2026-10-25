@@ -49,6 +49,10 @@ Trennung: UI liest nur Lesemodelle, Provider liefern Rohdaten mit Herkunft und Z
 
 Twelve Data (Free nur US) und Financial Modeling Prep (internationale Börsen erst im Ultimate-Plan) wurden geprüft und verworfen. Kurse werden nie als Echtzeit ausgewiesen, wenn sie Tagesschlusskurse sind.
 
+## Kostenloser Betrieb
+
+Mit `EODHD_PLAN=free` (Standard) laufen US-Titel über Finnhub Free und nur europäische Titel, ETFs und Indizes über den kostenlosen EODHD-Key. Ein Tagesbudget (Standard 18 von 20 Calls) wird eingehalten, bereits heute geladene Kurse werden bei weiteren Refreshes nicht erneut abgerufen. Einschränkungen: für US-Titel kein Kursverlauf (Finnhub Free liefert nur die aktuelle Quote), Fundamentaldaten und Scores nur für US-Titel, kein KI-Briefing ohne Anthropic-Key (regelbasierter Report).
+
 ## Produktion (Vercel + Supabase)
 
 1. Supabase-Projekt anlegen, Connection String des Transaction Poolers (Port 6543) als `DATABASE_URL` hinterlegen.

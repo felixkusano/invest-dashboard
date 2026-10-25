@@ -70,6 +70,15 @@ export async function runPipeline(o: PipelineOptions): Promise<PipelineResult> {
     }
   }
 
+  // EODHD-Budget: im Free-Plan max. 20 Calls/Tag. Bereits heute abgerufene Instrumente werden nicht erneut geladen.
+  const todayStart = new Date(berlinDate(now) + "T00:00:00Z");
+  const eodLimit = Number(env.EODHD_DAILY_LIMIT ?? (env.EODHD_PLAN === "paid" ? 100000 : 18));
+  let eodCalls = 0;
+  const eodFetchedToday = async (instrumentId: number | null, code?: string) => {
+    if (code) return (await db.select({ id: s.marketIndices.id }).from(s.marketIndices).where(and(eq(s.marketIndices.code, code), eq(s.marketIndices.provider, "eodhd"), gte(s.marketIndices.retrievedAt, todayStart))).limit(1)).length > 0;
+    return (await db.select({ id: s.prices.id }).from(s.prices).where(and(eq(s.prices.instrumentId, instrumentId!), eq(s.prices.provider, "eodhd"), gte(s.prices.retrievedAt, todayStart))).limit(1)).length > 0;
+  };
+
   // Instrumente: Depot + nicht verworfene Kandidaten
   const holdingInstr = await db.select({ i: s.instruments }).from(s.holdings).innerJoin(s.instruments, eq(s.holdings.instrumentId, s.instruments.id)).where(and(eq(s.holdings.userId, userId), eq(s.holdings.active, true)));
   const candInstr = await db.select({ i: s.instruments }).from(s.candidates).innerJoin(s.instruments, eq(s.candidates.instrumentId, s.instruments.id)).where(and(eq(s.candidates.userId, userId), ne(s.candidates.status, "dismissed")));
@@ -105,6 +114,11 @@ export async function runPipeline(o: PipelineOptions): Promise<PipelineResult> {
       let done = false;
       for (const p of providers.quotes) {
         if (!p.supports(pi(i))) continue;
+        if (p.name === "eodhd") {
+          if (await eodFetchedToday(i.id)) { ok++; done = true; break; }
+          if (eodCalls >= eodLimit) { await log("prices", "warn", `${i.symbol}: EODHD-Tageslimit (${eodLimit}) erreicht`, "eodhd"); continue; }
+          eodCalls++;
+        }
         try {
           const q = await p.getDaily(pi(i), from);
           if (!q || !q.bars.length) continue;
@@ -132,6 +146,11 @@ export async function runPipeline(o: PipelineOptions): Promise<PipelineResult> {
     let n = 0;
     for (const ix of INDEX_QUOTES) {
       for (const p of providers.indices) {
+        if (p.name === "eodhd") {
+          if (await eodFetchedToday(null, ix.code)) { n++; break; }
+          if (eodCalls >= eodLimit) { await log("indices", "warn", `${ix.code}: EODHD-Tageslimit erreicht`, "eodhd"); continue; }
+          eodCalls++;
+        }
         try {
           const r = await p.indexDaily(ix.code, ix.eodhd, addDays(berlinDate(now), -400));
           if (!r) continue;

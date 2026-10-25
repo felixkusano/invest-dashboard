@@ -121,6 +121,19 @@ describe("Pipeline mit Datenbank (PGlite)", () => {
     expect(r.status).toBe("skipped");
   });
 
+  it("EODHD-Free-Budget: Tageslimit wird eingehalten, wiederholte Läufe rufen nichts doppelt ab", async () => {
+    let calls = 0; const seen: number[] = [];
+    class CountingEod extends FakeQuotes { override readonly name = "eodhd"; override async getDaily(i: ProviderInstrument) { calls++; seen.push(i.id); const r = await super.getDaily(i); return r && { ...r, provider: "eodhd" }; } }
+    const pv = { ...providers(), quotes: [new CountingEod()] } as unknown as Providers;
+    await db.update(s.pipelineRuns).set({ status: "failed" }).where(eq(s.pipelineRuns.status, "running")); // Lock aus vorherigem Test lösen
+    const t = new Date(); // retrievedAt nutzt die echte Uhr
+    await runPipeline({ db, userId, trigger: "cli", now: t, providers: pv, env: { EODHD_DAILY_LIMIT: "4" } as unknown as NodeJS.ProcessEnv });
+    expect(calls).toBe(4);
+    await runPipeline({ db, userId, trigger: "cli", now: new Date(t.getTime() + 60e3), providers: pv, env: { EODHD_DAILY_LIMIT: "4" } as unknown as NodeJS.ProcessEnv });
+    expect(calls).toBe(8);
+    expect(new Set(seen).size).toBe(8); // bereits heute geladene Instrumente werden nicht erneut abgerufen
+  });
+
   it("Datenisolation: ein zweiter Nutzer sieht keine fremden Positionen", async () => {
     const other = await ensureSeeded(db, "other@example.com");
     const mine = await loadHoldingRows(db, userId);
