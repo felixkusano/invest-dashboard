@@ -26,7 +26,19 @@ async function create(): Promise<Db> {
       prepare: false, // kompatibel mit Supabase Transaction Pooler
       idle_timeout: 20,
     });
-    return drizzlePg(client, { schema });
+    const db = drizzlePg(client, { schema });
+    // Produktion: Migrationen beim ersten Zugriff automatisch anwenden (idempotent über __drizzle_migrations).
+    if (process.env.AUTO_MIGRATE !== "false") {
+      const { migrate } = await import("drizzle-orm/postgres-js/migrator");
+      try {
+        await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+      } catch (e) {
+        // Paralleler Kaltstart kann dieselbe Migration gleichzeitig versuchen; ein zweiter Versuch sieht den fertigen Stand.
+        await new Promise((r) => setTimeout(r, 1500));
+        await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") }).catch(() => { throw e; });
+      }
+    }
+    return db;
   }
   const { PGlite } = await import("@electric-sql/pglite");
   const { drizzle } = await import("drizzle-orm/pglite");
@@ -42,7 +54,7 @@ async function create(): Promise<Db> {
 export async function getDb(): Promise<Db> {
   const h = g.__investDb!;
   if (h.db) return h.db;
-  h.ready ??= create().then((db) => (h.db = db));
+  h.ready ??= create().then((db) => (h.db = db)).catch((e) => { h.ready = undefined; throw e; });
   return h.ready;
 }
 

@@ -12,7 +12,7 @@ import { computeAnalytics } from "@/server/analytics";
 const NOW = new Date("2026-10-26T05:30:00Z"); // Montag 06:30 Berlin (Winterzeit)
 
 class FakeQuotes implements QuoteProvider {
-  readonly name = "fake"; readonly dataType = "eod" as const;
+  readonly name: string = "fake"; readonly dataType = "eod" as const;
   constructor(private fail = false) {}
   supports(i: ProviderInstrument) { return !!i.providerSymbols.eodhd; }
   async getDaily(i: ProviderInstrument): Promise<QuoteResult | null> {

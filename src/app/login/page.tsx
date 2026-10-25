@@ -16,7 +16,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
         <input type="hidden" name="next" value={sp.next ?? "/"} />
         <label className="mt-5 block"><span className="label">E-Mail</span><input name="email" type="email" autoComplete="username" required className="mt-0.5 w-full" /></label>
         <label className="mt-3 block"><span className="label">Passwort</span><input name="password" type="password" autoComplete="current-password" required className="mt-0.5 w-full" /></label>
-        {sp.error && <p role="alert" className="mt-3 rounded bg-neg-soft px-3 py-2 text-[13px] text-neg">{ERR[sp.error] ?? "Anmeldung fehlgeschlagen."}</p>}
+        {sp.error && <p role="alert" className="mt-3 rounded bg-neg-soft px-3 py-2 text-[13px] text-neg">{ERR[sp.error] ?? "Anmeldung fehlgeschlagen."}{sp.error === "config" && <> <a href="/setup" className="underline">Zur Einrichtung</a></>}</p>}
         <button className="btn mt-5 w-full justify-center" type="submit">Anmelden</button>
       </form>
     </main>

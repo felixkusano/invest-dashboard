@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   // PGlite (lokale Postgres-Engine in WASM) und postgres-js laufen nur serverseitig.
   serverExternalPackages: ["@electric-sql/pglite", "postgres"],
   poweredByHeader: false,
+  // SQL-Migrationen werden zur Laufzeit gelesen und müssen im Serverless-Bundle enthalten sein.
+  outputFileTracingIncludes: { "/**": ["./drizzle/**/*"] },
   async headers() {
     return [
       {

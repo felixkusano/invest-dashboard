@@ -55,10 +55,10 @@ Mit `EODHD_PLAN=free` (Standard) laufen US-Titel über Finnhub Free und nur euro
 
 ## Produktion (Vercel + Supabase)
 
-1. Supabase-Projekt anlegen, Connection String des Transaction Poolers (Port 6543) als `DATABASE_URL` hinterlegen.
-2. Migrationen ausführen: `DATABASE_URL=... npm run db:migrate` (aktiviert RLS auf allen Tabellen, die App greift serverseitig als Owner zu).
-3. Repository in Vercel importieren, alle Variablen aus `.env.example` setzen (`ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, `CRON_SECRET`, Provider-Keys).
-4. Deploy. Beim ersten Login wird das Startportfolio angelegt. Erstlauf manuell über „Jetzt aktualisieren“ oder `GET /api/cron/daily?force=1` mit Bearer-Token.
+1. Supabase-Projekt anlegen, Connection String des Transaction Poolers (Port 6543) als `DATABASE_URL` verwenden.
+2. Repository in Vercel importieren und `DATABASE_URL`, `ADMIN_EMAIL` sowie die Provider-Keys setzen. Deploy.
+3. `https://<deine-app>.vercel.app/setup` öffnen, Passwort wählen und die erzeugten Werte `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, `CRON_SECRET` in Vercel eintragen. Danach neu deployen. Die Seite deaktiviert sich, sobald die Anmeldung eingerichtet ist.
+4. Anmelden. Migrationen laufen beim ersten Datenbankzugriff automatisch, das Startportfolio wird angelegt. Erstlauf über „Jetzt aktualisieren“.
 
 ## Täglicher Zeitplan
 
