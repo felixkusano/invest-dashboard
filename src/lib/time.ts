@@ -42,14 +42,26 @@ export function berlinToUtc(date: string, time: string): Date {
 }
 
 /**
- * Cron-Gate: Vercel Cron und GitHub Actions laufen in UTC. Wir planen zwei UTC-Zeitpunkte
- * (04:30 und 05:30 UTC) und führen nur den aus, der in Berlin dem Zielfenster entspricht.
+ * Cron-Gate: GitHub Actions und Vercel Cron laufen in UTC und starten unter Last oft 30 bis 60 Minuten verspätet.
+ * Deshalb gilt ein großzügiges Fenster (60 Minuten vor bis 3 Stunden nach dem Ziel in Berliner Zeit).
+ * Doppelte Läufe verhindert shouldRunDaily über den letzten erfolgreichen Lauf des Tages.
  */
-export function isWithinBerlinWindow(now: Date, target: string, toleranceMinutes = 40): boolean {
+export function isWithinBerlinWindow(now: Date, target: string, beforeMinutes = 60, afterMinutes = 180): boolean {
   const p = berlinParts(now);
   const [h, m] = target.split(":").map(Number);
   const diff = p.hour * 60 + p.minute - (h * 60 + m);
-  return diff >= -5 && diff <= toleranceMinutes;
+  return diff >= -beforeMinutes && diff <= afterMinutes;
+}
+
+/** Läuft der tägliche Job jetzt? Nur im Fenster und nur, wenn heute (Berlin) seit Fensterbeginn noch kein erfolgreicher Lauf stattfand. */
+export function shouldRunDaily(now: Date, target: string, lastSuccessAt: Date | null): { run: boolean; reason: string } {
+  if (!isWithinBerlinWindow(now, target)) return { run: false, reason: `Außerhalb des Berliner Zeitfensters um ${target}` };
+  if (lastSuccessAt && berlinDate(lastSuccessAt) === berlinDate(now)) {
+    const [h, m] = target.split(":").map(Number);
+    const lp = berlinParts(lastSuccessAt);
+    if (lp.hour * 60 + lp.minute >= h * 60 + m - 60) return { run: false, reason: "Heute bereits erfolgreich aktualisiert" };
+  }
+  return { run: true, reason: "ok" };
 }
 
 export type Exchange = "XETRA" | "NASDAQ" | "NYSE" | "OSLO" | "CRYPTO" | "OTHER";

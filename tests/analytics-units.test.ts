@@ -3,7 +3,7 @@ import { lookThrough, structuralOverlapNote, weightOverlapPct } from "@/domain/o
 import { band, scoreCompany } from "@/domain/scoring";
 import { mechanicalScenarios } from "@/domain/scenarios";
 import { dashboardStatus, priceFreshness } from "@/domain/freshness";
-import { addDays, berlinDate, berlinToUtc, isTradingDay, isWithinBerlinWindow, lastCompletedTradingDay } from "@/lib/time";
+import { addDays, berlinDate, berlinToUtc, isTradingDay, isWithinBerlinWindow, lastCompletedTradingDay, shouldRunDaily } from "@/lib/time";
 import { computeRisks } from "@/domain/risk";
 import { summarizePortfolio } from "@/domain/portfolio";
 
@@ -67,13 +67,22 @@ describe("Szenarien", () => {
 });
 
 describe("Zeitzonen und Handelstage", () => {
-  it("Cron-Gate wählt in Sommer- und Winterzeit den richtigen UTC-Lauf", () => {
-    // Sommerzeit (UTC+2): 04:30 UTC = 06:30 Berlin
+  it("Cron-Gate toleriert verspätete GitHub-Starts in Sommer- und Winterzeit", () => {
+    // Winterzeit: Starts um 06:13 und 07:12 Berlin (beobachtete Verspätung) liegen im Fenster
+    expect(isWithinBerlinWindow(new Date("2026-10-30T05:13:00Z"), "06:30")).toBe(true);
+    expect(isWithinBerlinWindow(new Date("2026-10-30T06:12:00Z"), "06:30")).toBe(true);
+    // Sommerzeit: 04:30 UTC = 06:30 Berlin
     expect(isWithinBerlinWindow(new Date("2026-07-01T04:30:00Z"), "06:30")).toBe(true);
-    expect(isWithinBerlinWindow(new Date("2026-07-01T05:30:00Z"), "06:30")).toBe(false);
-    // Winterzeit (UTC+1): 05:30 UTC = 06:30 Berlin
-    expect(isWithinBerlinWindow(new Date("2026-12-01T05:30:00Z"), "06:30")).toBe(true);
-    expect(isWithinBerlinWindow(new Date("2026-12-01T04:30:00Z"), "06:30")).toBe(false);
+    // Nachts und nachmittags nicht
+    expect(isWithinBerlinWindow(new Date("2026-10-30T02:00:00Z"), "06:30")).toBe(false);
+    expect(isWithinBerlinWindow(new Date("2026-10-30T13:00:00Z"), "06:30")).toBe(false);
+  });
+  it("nur ein automatischer Lauf pro Tag", () => {
+    const first = new Date("2026-10-30T05:13:00Z");
+    expect(shouldRunDaily(first, "06:30", new Date("2026-10-29T05:20:00Z")).run).toBe(true); // gestern
+    expect(shouldRunDaily(new Date("2026-10-30T06:12:00Z"), "06:30", new Date("2026-10-30T05:15:00Z")).run).toBe(false); // heute schon gelaufen
+    expect(shouldRunDaily(first, "06:30", new Date("2026-10-30T03:00:00Z")).run).toBe(true); // manueller Lauf um 04:00 zählt nicht
+    expect(shouldRunDaily(first, "06:30", null).run).toBe(true);
   });
   it("Umstellungstag 25.10.2026", () => {
     expect(berlinToUtc("2026-10-25", "06:30").toISOString()).toBe("2026-10-25T05:30:00.000Z");
