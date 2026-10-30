@@ -8,11 +8,13 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:generate": "drizzle-kit generate",
+    "db:generate": "drizzle-kit generate && tsx scripts/embed-migrations.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
     "pipeline": "tsx scripts/run-pipeline.ts",
-    "hash-password": "tsx scripts/hash-password.ts"
+    "hash-password": "tsx scripts/hash-password.ts",
+    "db:embed": "tsx scripts/embed-migrations.ts",
+    "prebuild": "tsx scripts/embed-migrations.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.11",
